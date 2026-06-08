@@ -82,21 +82,21 @@ def inicio():
 
 @app.route("/auditar", methods=["POST"])
 def auditar_embarque():
-    # 1. Si el usuario no está activo, le pide el pago de Mercado Pago
+    # 1. Si el usuario no está activo, le pide el pago
     if not USUARIO_SITUACION["activo"]:
         return jsonify({
-            "activo": False, 
+            "success": False, 
             "mensaje": "Acceso Restringido. Tu suscripción mensual de Mecatronix no se encuentra activa."
         })
     
     # 2. Si está activo, procesa los números gratis localmente
     try:
-        datos = request.json
-        # Buscamos 'mensaje' o 'detalles', por si la página web usa nombres distintos
-        mensaje = datos.get('mensaje') or datos.get('detalles', '')
+        datos = request.get_json()
+        # Leemos 'detalles' que es el nombre exacto que manda tu JavaScript
+        texto_detalles = datos.get("detalles", "")
         
         # Llamamos a nuestra función matemática local
-        resultado = interpretar_datos_ia(mensaje)
+        resultado = interpretar_datos_ia(texto_detalles)
         
         # Si la función local nos devolvió un error de texto, lo mandamos a la pantalla
         if "error" in resultado:
@@ -105,7 +105,7 @@ def auditar_embarque():
                 "mensaje": resultado["error"]
             })
             
-        # Para que la página web no se confunda, le damos el formato que espera
+        # Le regresamos los datos exactos que tu diseño HTML necesita para pintar la tabla
         return jsonify({
             "success": True,
             "peso_origen": resultado["kilos_origen"],
@@ -118,7 +118,7 @@ def auditar_embarque():
         })
         
     except Exception as e:
-        print(f"Error en el servidor: {e}")
+        print(f"Error en el servidor de Render: {e}")
         return jsonify({
             "success": False,
             "mensaje": "Ocurrió un error analítico al procesar las métricas de pesaje."
